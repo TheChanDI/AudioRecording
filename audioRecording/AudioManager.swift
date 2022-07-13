@@ -32,10 +32,10 @@ class AudioManager: NSObject {
 //        audioEngine.attach(audioRecordFilePlayer)
         
         let inputNode = audioEngine.inputNode
-        
+        inputNode.volume = 0
         let inputFormat = inputNode.outputFormat(forBus: 0)
         
-        audioEngine.connect(inputNode, to: mixer, format: nil)
+//        audioEngine.connect(inputNode, to: mixer, format: nil)
         
         audioEngine.connect(audioFilePlayer, to: mixer, format: nil)
 //        audioEngine.connect(audioRecordFilePlayer, to: mixer, format: nil)
@@ -62,7 +62,7 @@ class AudioManager: NSObject {
     
     func setupAudioSession() {
         do{
-            try audioSession.setCategory(.playAndRecord, options: .defaultToSpeaker)
+            try audioSession.setCategory(.playAndRecord, mode: .default, options: .defaultToSpeaker)
             try audioSession.setActive(true)
         } catch{
             print(error.localizedDescription)
@@ -91,13 +91,13 @@ class AudioManager: NSObject {
         
         print(documentURL.appendingPathComponent("recording.caf"), "lets see here ----->")
         
+        audioEngine.inputNode.removeTap(onBus: 0)
+        
         audioEngine.inputNode.installTap(onBus: 0, bufferSize: 100, format: nil, block: { (buffer: AVAudioPCMBuffer!, time: AVAudioTime!) -> Void in
             print(buffer, "buffer ------>")
             try? self.recordedFile?.write(from: buffer)
             
         })
-        //Start Engine
-        //        try! self.audioEngine.start()
     }
     
     
@@ -115,7 +115,7 @@ class AudioManager: NSObject {
         try? audioFile!.read(into: audioFileBuffer!)
         
         
-        audioFilePlayer.volume = 1
+//        audioFilePlayer.volume = 1
         audioFilePlayer.scheduleFile(audioFile!,
                                      at: nil,
                                      completionCallbackType: .dataPlayedBack) { _ in
@@ -137,10 +137,12 @@ class AudioManager: NSObject {
         
         do {
 
-            audioFilePlayer.volume = 1
+//            audioFilePlayer.volume = 1
             audioFilePlayer.scheduleFile(recordedFile!,
                                          at: nil,
                                          completionCallbackType: .dataPlayedBack) { _ in
+                
+                
             }
             
             try self.audioEngine.start()
