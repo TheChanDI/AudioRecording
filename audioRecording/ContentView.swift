@@ -10,12 +10,13 @@ import SwiftUI
 struct ContentView: View {
     
     var audioManager = AudioManager()
-    
+//    var recorder1 = Recorder()
     var body: some View {
         ZStack {
             HStack {
                 Button {
                     audioManager.startPlay()
+
                 } label: {
                     Text("Play")
                         .padding()
@@ -33,7 +34,8 @@ struct ContentView: View {
                 }
                 Spacer()
                 Button {
-                   try? audioManager.startRecord()
+//                    try? recorder1.startRecording()
+                    audioManager.startRecord()
                 } label: {
                     Text("Record")
                         .padding()
@@ -44,6 +46,7 @@ struct ContentView: View {
                 Spacer()
                 Button {
                     audioManager.stopRecord()
+//                    try? recorder1.stopRecording()
                 } label: {
                     Text("Stop Record")
                         .padding()

@@ -84,7 +84,7 @@ class Recorder {
       // AVAudioFile uses the Core Audio Format (CAF) to write to disk.
       // So we're using the caf file extension.
         let file = try AVAudioFile(forWriting: documentURL.appendingPathComponent("recording.caf"), settings: format.settings)
-       
+       print(documentURL.appendingPathComponent("recording.caf"), "--->>>")
       tapNode.installTap(onBus: 0, bufferSize: 4096, format: format, block: {
         (buffer, time) in
 

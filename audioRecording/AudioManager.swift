@@ -16,27 +16,29 @@ class AudioManager: NSObject {
     var audioFilePlayer: AVAudioPlayerNode!
     var recordedFile: AVAudioFile?
     var audioRecordFilePlayer: AVAudioPlayerNode!
+    let audioSession = AVAudioSession.sharedInstance()
+    
     
     override init() {
         super.init()
         askingForPermission()
-        
+        setupAudioSession()
         audioFilePlayer = AVAudioPlayerNode()
-        audioRecordFilePlayer = AVAudioPlayerNode()
+//        audioRecordFilePlayer = AVAudioPlayerNode()
         mixer = AVAudioMixerNode()
-
+        
         audioEngine.attach(audioFilePlayer)
         audioEngine.attach(mixer)
-        audioEngine.attach(audioRecordFilePlayer)
-
+//        audioEngine.attach(audioRecordFilePlayer)
+        
         let inputNode = audioEngine.inputNode
         
         let inputFormat = inputNode.outputFormat(forBus: 0)
         
-        audioEngine.connect(inputNode, to: mixer, format: inputFormat)
+        audioEngine.connect(inputNode, to: mixer, format: nil)
         
         audioEngine.connect(audioFilePlayer, to: mixer, format: nil)
-        audioEngine.connect(audioRecordFilePlayer, to: mixer, format: nil)
+//        audioEngine.connect(audioRecordFilePlayer, to: mixer, format: nil)
         
         try? audioEngine.inputNode.setVoiceProcessingEnabled(true)
         
@@ -44,7 +46,7 @@ class AudioManager: NSObject {
         let mixerFormat = AVAudioFormat(commonFormat: .pcmFormatFloat32, sampleRate: inputFormat.sampleRate, channels: 1, interleaved: false)
         
         audioEngine.connect(mixer, to: mainMixerNode, format: mixerFormat)
-
+        
         audioEngine.prepare()
         
     }
@@ -58,13 +60,21 @@ class AudioManager: NSObject {
     }
     
     
+    func setupAudioSession() {
+        do{
+            try audioSession.setCategory(.playAndRecord, options: .defaultToSpeaker)
+            //            try audioSession.setActive(true)
+        } catch{
+            print(error.localizedDescription)
+        }
+    }
+    
+    
     
     func startRecord() {
-        try! AVAudioSession.sharedInstance().setCategory(.playAndRecord, mode: .default)
-        try! AVAudioSession.sharedInstance().setActive(true)
         
         let format = AVAudioFormat(commonFormat: AVAudioCommonFormat.pcmFormatInt16,
-                                   sampleRate: 44100.0,
+                                   sampleRate: 44100,
                                    channels: 1,
                                    interleaved: true)
         
@@ -73,19 +83,21 @@ class AudioManager: NSObject {
         let format1 = tapNode.outputFormat(forBus: 0)
         
         let documentURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
-          
+        
         // AVAudioFile uses the Core Audio Format (CAF) to write to disk.
         // So we're using the caf file extension.
+        
         recordedFile = try? AVAudioFile(forWriting: documentURL.appendingPathComponent("recording.caf"), settings: format1.settings)
         
+        print(documentURL.appendingPathComponent("recording.caf"), "lets see here ----->")
         
-        
-        audioEngine.inputNode.installTap(onBus: 0, bufferSize: 1024, format: format, block: { (buffer: AVAudioPCMBuffer!, time: AVAudioTime!) -> Void in
+        audioEngine.inputNode.installTap(onBus: 0, bufferSize: 1024, format: nil, block: { (buffer: AVAudioPCMBuffer!, time: AVAudioTime!) -> Void in
             print(buffer, "buffer ------>")
             try? self.recordedFile?.write(from: buffer)
+            
         })
         //Start Engine
-//        try! self.audioEngine.start()
+        //        try! self.audioEngine.start()
     }
     
     
@@ -99,41 +111,50 @@ class AudioManager: NSObject {
         let audioFrameCount = UInt32(audioFile!.length)
         
         let audioFileBuffer = AVAudioPCMBuffer(pcmFormat: audioFormat, frameCapacity: audioFrameCount)
- 
+        
         try? audioFile!.read(into: audioFileBuffer!)
         
-
-        audioFilePlayer.volume = 8
+        
+        audioFilePlayer.volume = 1
         audioFilePlayer.scheduleFile(audioFile!,
-                                at: nil,
-                                completionCallbackType: .dataPlayedBack) { _ in
+                                     at: nil,
+                                     completionCallbackType: .dataPlayedBack) { _ in
             /* Handle any work that's necessary after playback. */
         }
         
         try! self.audioEngine.start()
         
         audioFilePlayer.play()
-
+        
     }
     
     func stopRecord() {
+        
+        audioFilePlayer.stop()
+//        audioEngine.inputNode.removeTap(onBus: 0)
+//        audioEngine.disconnectNodeInput(audioEngine.inputNode)
+//        audioEngine.detach(audioEngine.inputNode)
+        audioEngine.stop()
 
-        //Stop playing 1K file
-        self.audioFilePlayer.stop()
-        
-        //Stop Engine
-        self.audioEngine.stop()
-        
     }
     
     func playAudioRecorded() {
         
-        audioRecordFilePlayer.scheduleFile(recordedFile!, at: nil, completionCallbackType: .dataPlayedBack) { _ in
+        do {
+
+            audioFilePlayer.volume = 1
+            audioFilePlayer.scheduleFile(recordedFile!,
+                                         at: nil,
+                                         completionCallbackType: .dataPlayedBack) { _ in
+            }
             
+            try self.audioEngine.start()
+        } catch {
+            print(error.localizedDescription)
         }
-        
-        audioRecordFilePlayer.play()
+        audioFilePlayer.play()
     }
+    
     
     func URLFor(filename: String) -> URL? {
         let documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
