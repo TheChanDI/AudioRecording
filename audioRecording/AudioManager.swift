@@ -63,7 +63,7 @@ class AudioManager: NSObject {
     func setupAudioSession() {
         do{
             try audioSession.setCategory(.playAndRecord, options: .defaultToSpeaker)
-            //            try audioSession.setActive(true)
+            try audioSession.setActive(true)
         } catch{
             print(error.localizedDescription)
         }
@@ -91,7 +91,7 @@ class AudioManager: NSObject {
         
         print(documentURL.appendingPathComponent("recording.caf"), "lets see here ----->")
         
-        audioEngine.inputNode.installTap(onBus: 0, bufferSize: 1024, format: nil, block: { (buffer: AVAudioPCMBuffer!, time: AVAudioTime!) -> Void in
+        audioEngine.inputNode.installTap(onBus: 0, bufferSize: 100, format: nil, block: { (buffer: AVAudioPCMBuffer!, time: AVAudioTime!) -> Void in
             print(buffer, "buffer ------>")
             try? self.recordedFile?.write(from: buffer)
             
@@ -129,13 +129,8 @@ class AudioManager: NSObject {
     }
     
     func stopRecord() {
-        
         audioFilePlayer.stop()
-//        audioEngine.inputNode.removeTap(onBus: 0)
-//        audioEngine.disconnectNodeInput(audioEngine.inputNode)
-//        audioEngine.detach(audioEngine.inputNode)
         audioEngine.stop()
-
     }
     
     func playAudioRecorded() {
@@ -155,11 +150,6 @@ class AudioManager: NSObject {
         audioFilePlayer.play()
     }
     
-    
-    func URLFor(filename: String) -> URL? {
-        let documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
-        return documentsDirectory.appendingPathComponent(filename)
-    }
 }
 
 
